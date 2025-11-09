@@ -2,9 +2,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Github, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
 
 interface BuildCardProps {
-  id: string;
+  id: string; // added to fix TS error
   title: string;
   description: string;
   tags?: string[] | null;
@@ -12,6 +13,7 @@ interface BuildCardProps {
   status: string;
   github_url?: string | null;
   live_url?: string | null;
+  created_at: string; // added for post time
   users?: {
     name: string;
     avatar_url?: string | null;
@@ -20,6 +22,7 @@ interface BuildCardProps {
 }
 
 export default function BuildCard({
+  id,
   title,
   description,
   tags,
@@ -28,22 +31,21 @@ export default function BuildCard({
   github_url,
   live_url,
   users,
-  comment_count
+  comment_count,
+  created_at,
 }: BuildCardProps) {
   // Safely handle tags
   const safeTags = Array.isArray(tags) ? tags : [];
 
   return (
-    <Card className="p-6 hover:shadow-lg transition-all duration-200">
+    <Card key={id} className="p-6 hover:shadow-lg transition-all duration-200">
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
             <h3 className="text-xl font-semibold hover:text-primary transition-colors">
               {title}
             </h3>
-            <p className="text-muted-foreground line-clamp-2">
-              {description}
-            </p>
+            <p className="text-muted-foreground line-clamp-2">{description}</p>
           </div>
           <Badge variant={status === 'Completed' ? 'default' : 'secondary'}>
             {status}
@@ -98,23 +100,28 @@ export default function BuildCard({
           </div>
         </div>
 
-        {/* User info */}
+        {/* User info and time */}
         {users && (
-          <div className="flex items-center gap-2 pt-2">
-            {users.avatar_url ? (
-              <img
-                src={users.avatar_url}
-                alt={users.name}
-                className="w-6 h-6 rounded-full"
-              />
-            ) : (
-              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-xs font-medium">
-                  {users.name?.charAt(0).toUpperCase() || 'A'}
-                </span>
-              </div>
-            )}
-            <span className="text-sm text-muted-foreground">{users.name}</span>
+          <div className="flex items-center gap-2 pt-2 justify-between">
+            <div className="flex items-center gap-2">
+              {users.avatar_url ? (
+                <img
+                  src={users.avatar_url}
+                  alt={users.name}
+                  className="w-6 h-6 rounded-full"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-xs font-medium">
+                    {users.name?.charAt(0).toUpperCase() || 'A'}
+                  </span>
+                </div>
+              )}
+              <span className="text-sm text-muted-foreground">{users.name}</span>
+            </div>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+            </span>
           </div>
         )}
       </div>

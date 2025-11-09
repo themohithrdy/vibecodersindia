@@ -35,57 +35,58 @@ export default function CommentSection({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Load comments based on item type
   const loadComments = async () => {
     try {
       setLoading(true);
       let data: any[] = [];
 
-      // Query the correct table based on itemType
       if (itemType === 'build' || itemType === 'post') {
         const { data: commentData, error } = await supabase
           .from('comments')
-          .select('*')
+          .select(`
+            *,
+            users:user_id (
+              name,
+              avatar_url
+            )
+          `)
           .eq('post_id', itemId)
           .order('created_at', { ascending: true });
-        
         if (error) throw error;
         data = commentData || [];
       } else if (itemType === 'share') {
         const { data: commentData, error } = await supabase
           .from('share_comments')
-          .select('*')
+          .select(`
+            *,
+            users:user_id (
+              name,
+              avatar_url
+            )
+          `)
           .eq('share_id', itemId)
           .order('created_at', { ascending: true });
-        
         if (error) throw error;
         data = commentData || [];
       } else if (itemType === 'ai_news') {
         const { data: commentData, error } = await supabase
           .from('ai_news_comments')
-          .select('*')
+          .select(`
+            *,
+            users:user_id (
+              name,
+              avatar_url
+            )
+          `)
           .eq('ai_news_id', itemId)
           .order('created_at', { ascending: true });
-        
         if (error) throw error;
         data = commentData || [];
       }
 
-      // Transform data to include user info
-      const transformedComments: Comment[] = data.map(comment => ({
-        id: comment.id,
-        content: comment.content,
-        created_at: comment.created_at,
-        user_id: comment.user_id,
-        users: {
-          name: 'Community Member',
-          avatar_url: null
-        }
-      }));
-
-      setComments(transformedComments);
+      setComments(data);
       if (onCommentCountChange) {
-        onCommentCountChange(transformedComments.length);
+        onCommentCountChange(data.length);
       }
     } catch (error: any) {
       console.error('Error loading comments:', error);
@@ -98,7 +99,6 @@ export default function CommentSection({
   useEffect(() => {
     loadComments();
 
-    // Subscribe to real-time changes
     const getChannelConfig = () => {
       if (itemType === 'build' || itemType === 'post') {
         return { table: 'comments' as const, filter: `post_id=eq.${itemId}` };
@@ -116,7 +116,7 @@ export default function CommentSection({
         event: '*',
         schema: 'public',
         table: config.table,
-        filter: config.filter
+        filter: config.filter,
       }, () => {
         loadComments();
       })
@@ -129,7 +129,7 @@ export default function CommentSection({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newComment.trim()) {
       toast({
         title: "Error",
@@ -151,14 +151,13 @@ export default function CommentSection({
     try {
       setSubmitting(true);
 
-      // Insert into the correct table
       if (itemType === 'build' || itemType === 'post') {
         const { error } = await supabase
           .from('comments')
           .insert({
             content: newComment.trim(),
             user_id: user.id,
-            post_id: itemId
+            post_id: itemId,
           });
         if (error) throw error;
       } else if (itemType === 'share') {
@@ -167,7 +166,7 @@ export default function CommentSection({
           .insert({
             content: newComment.trim(),
             user_id: user.id,
-            share_id: itemId
+            share_id: itemId,
           });
         if (error) throw error;
       } else if (itemType === 'ai_news') {
@@ -176,7 +175,7 @@ export default function CommentSection({
           .insert({
             content: newComment.trim(),
             user_id: user.id,
-            ai_news_id: itemId
+            ai_news_id: itemId,
           });
         if (error) throw error;
       }
@@ -186,7 +185,7 @@ export default function CommentSection({
         title: "Success",
         description: "Comment added!",
       });
-      
+
       loadComments();
     } catch (error: any) {
       console.error('Error posting comment:', error);
@@ -204,7 +203,6 @@ export default function CommentSection({
     if (!user) return;
 
     try {
-      // Delete from the correct table
       if (itemType === 'build' || itemType === 'post') {
         const { error } = await supabase
           .from('comments')
@@ -232,7 +230,7 @@ export default function CommentSection({
         title: "Success",
         description: "Comment deleted",
       });
-      
+
       loadComments();
     } catch (error: any) {
       console.error('Error deleting comment:', error);
@@ -265,11 +263,19 @@ export default function CommentSection({
             <div key={comment.id} className="flex gap-3 p-3 rounded-lg bg-muted/30">
               {/* Avatar */}
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-xs font-medium">
-                    {comment.users?.name?.charAt(0).toUpperCase() || 'C'}
-                  </span>
-                </div>
+                {comment.users?.avatar_url ? (
+                  <img
+                    src={comment.users.avatar_url}
+                    alt={comment.users.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-xs font-medium">
+                      {comment.users?.name?.charAt(0).toUpperCase() || 'C'}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Comment Content */}
@@ -283,7 +289,7 @@ export default function CommentSection({
                   </span>
                 </div>
                 <p className="text-sm">{comment.content}</p>
-                
+
                 {/* Delete button for own comments */}
                 {user?.id === comment.user_id && (
                   <button
