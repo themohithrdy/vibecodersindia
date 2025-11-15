@@ -62,7 +62,7 @@ export default function Build() {
       
       const { data, error } = await supabase
         .from('builds')
-        .select('*')
+        .select('*, profiles:user_id (name, avatar_url)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
