@@ -67,16 +67,7 @@ export default function Build() {
 
       if (error) throw error;
 
-      // Add anonymous user to each build
-      const transformedData = (data || []).map(build => ({
-        ...build,
-        users: {
-          name: 'Community Member',
-          avatar_url: null
-        }
-      }));
-
-      setBuilds(transformedData as Build[]);
+setBuilds(data as Build[]);
     } catch (err: any) {
       console.error('Error fetching builds:', err);
       toast({
